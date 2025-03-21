@@ -81,6 +81,7 @@ for epoch in range(5):
     test_accuracies.append(test_acc)
 
     print(f"Epoch {epoch+1}, Loss: {total_loss:.2f}, Test Acc: {100 * test_acc:.2f}%")
+torch.save(model.state_dict(), "mnist_cnn.pth")
 
 # 5. 畫出 loss & accuracy 曲線
 plt.figure(figsize=(12, 4))
