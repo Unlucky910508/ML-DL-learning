@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 # 1. 載入 MNIST 資料集（轉成 Tensor 並正規化）
 transform = transforms.Compose([
@@ -14,6 +15,9 @@ test_dataset  = datasets.MNIST(root='./data', train=False, download=True, transf
 
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 test_loader  = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+train_losses = []
+test_accuracies = []
 
 # 2. 定義 CNN 模型
 class CNN(nn.Module):
@@ -47,7 +51,10 @@ model = CNN()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# 4. 訓練模型
+train_losses = []
+test_accuracies = []
+
+# 4. 訓練模型（記錄 loss 和 accuracy）
 for epoch in range(5):
     model.train()
     total_loss = 0
@@ -58,17 +65,39 @@ for epoch in range(5):
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-    print(f"Epoch {epoch+1}, Loss: {total_loss:.2f}")
+    train_losses.append(total_loss)
 
-# 5. 測試準確率
-model.eval()
-correct = 0
-total = 0
-with torch.no_grad():
-    for x, y in test_loader:
-        outputs = model(x)
-        preds = torch.argmax(outputs, dim=1)
-        correct += (preds == y).sum().item()
-        total += y.size(0)
+    # 評估測試集準確率
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for x, y in test_loader:
+            outputs = model(x)
+            preds = torch.argmax(outputs, dim=1)
+            correct += (preds == y).sum().item()
+            total += y.size(0)
+    test_acc = correct / total
+    test_accuracies.append(test_acc)
 
-print(f"Test Accuracy: {100 * correct / total:.2f}%")
+    print(f"Epoch {epoch+1}, Loss: {total_loss:.2f}, Test Acc: {100 * test_acc:.2f}%")
+
+# 5. 畫出 loss & accuracy 曲線
+plt.figure(figsize=(12, 4))
+
+plt.subplot(1, 2, 1)
+plt.plot(train_losses, label='Train Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training Loss Curve')
+plt.grid(True)
+
+plt.subplot(1, 2, 2)
+plt.plot([acc * 100 for acc in test_accuracies], label='Test Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy (%)')
+plt.title('Test Accuracy Curve')
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
