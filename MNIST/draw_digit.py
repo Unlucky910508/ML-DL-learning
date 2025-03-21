@@ -2,6 +2,7 @@ import tkinter as tk
 from PIL import Image, ImageDraw, ImageOps
 import torch
 import torchvision.transforms as transforms
+from cnn_model import CNN  # ✅ 正確載入 CNN 類別
 
 # ======== 建立畫布 UI =========
 class App(tk.Tk):
@@ -23,7 +24,7 @@ class App(tk.Tk):
 
     def paint(self, event):
         x, y = event.x, event.y
-        r = 8  # 筆畫粗細
+        r = 8
         self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="white", outline="white")
         self.draw.ellipse([x - r, y - r, x + r, y + r], fill=255)
 
@@ -33,16 +34,14 @@ class App(tk.Tk):
         self.draw = ImageDraw.Draw(self.image)
 
     def predict(self):
-        # 轉成 28x28 並反相顏色（白字黑底）
         img = self.image.resize((28, 28))
         img = ImageOps.invert(img)
 
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))  # 如果你的訓練資料有 normalize，要加
+            transforms.Normalize((0.5,), (0.5,))  # 如果有 Normalize 就要加
         ])
-
-        input_tensor = transform(img).unsqueeze(0)  # 增加 batch 維度
+        input_tensor = transform(img).unsqueeze(0)
 
         with torch.no_grad():
             output = self.model(input_tensor)
@@ -50,9 +49,7 @@ class App(tk.Tk):
 
         self.title(f"辨識結果：{pred}")
 
-# ======== 載入你訓練好的模型 =========
-from CNN_train import CNN  # 假設你之前的模型類別叫 CNN
-
+# ======== 載入模型權重 =========
 model = CNN()
 model.load_state_dict(torch.load("mnist_cnn.pth", map_location=torch.device('cpu')))
 model.eval()
